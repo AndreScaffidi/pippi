@@ -26,7 +26,8 @@ def try_append(indices, cols, x):
   try:
     indices.append(cols.index(x))
   except:
-    sys.exit("ERROR: hdf5 file does not contain a field titled \""+x+"\".")
+    print "ERROR: hdf5 file does not contain a field titled \""+x+"\"."
+    quit()
 
 def castable_to_int(x):
   try:
@@ -99,8 +100,12 @@ class dataObject:
 
   def seek(self,string):
     #Look for field's key in string
-    if self.pipFileKey in string: return True
-    return False
+    x = string.split(" ")
+    for l in x:
+      if (l == self.pipFileKey):
+        return True
+    return False    
+
 
   def convert(self,string):
     #Convert string to appropriate data format for pip file field
@@ -240,7 +245,7 @@ def internal(x):
 
 
 #Global constants and simple one-liners
-pippiVersion = 'v2.1'
+pippiVersion = 'v2.0'
 
 def times1(x): return x
 def half(x): return x*0.5
@@ -266,11 +271,12 @@ allowedIntMethods = ['bilinear', 'spline']
 
 mainChain = dataObject('main_chain',safe_string)
 secChain = dataObject('comparison_chain',safe_string)
+thiChain = dataObject('comparison_chain2',safe_string)
+doCompMarker= dataObject('do_comp_marker',boolean)
 doPosterior = dataObject('do_posterior_pdf',boolean)
 doProfile = dataObject('do_profile_like',boolean)
 oneDplots = dataObject('oneD_plot_quantities',int_list)
 twoDplots = dataObject('twoD_plot_quantities',intuple_list)
 contours1D = dataObject('oneD_contour_levels',float_list)
 contours2D = dataObject('twoD_contour_levels',float_list)
-obsPlots = dataObject('plot_observables',int_list)
-keys = [mainChain,secChain,doPosterior,doProfile,oneDplots,twoDplots,contours1D,contours2D,obsPlots]
+keys = [mainChain,secChain,thiChain,doCompMarker,doPosterior,doProfile,oneDplots,twoDplots,contours1D,contours2D]

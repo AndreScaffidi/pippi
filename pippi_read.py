@@ -6,7 +6,7 @@
 # Author: Pat Scott (patscott@physics.mcgill.ca)
 # Originally developed: March 2012
 # Modified: Christoph Weniger, 2015
-#           Pat Scott, 2016
+#           Pat Scotr, 2016
 #############################################################
 
 import datetime
@@ -48,6 +48,7 @@ def getIniData(filename,keys,savekeys=None,savedir=None):
     if (len(lines) == 0):
       sys.exit('Error: field '+key.pipFileKey+' required for requested operation not found in '+filename+'.  Quitting...\n')
     if (len(lines) > 1):
+      print("Debug***: ", lines)
       sys.exit('Error: field '+key.pipFileKey+' required for requested operation duplicated in '+filename+'.  Quitting...\n')
     # Convert key entries to correct internal data format
     key.convert(re.sub(r'.*=', '', lines[0]))
@@ -80,7 +81,7 @@ def getIniData(filename,keys,savekeys=None,savedir=None):
   if savekeys is not None: outfile.close
 
 def getChainData(filename, cut_all_invalid=None, requested_cols=None, assignments=None, labels=None, silent=False,
- probe_only=False, data_ranges=None, log_plots=None, obs_plots=None, rescalings=None, preamble=None):
+ probe_only=False, data_ranges=None, log_plots=None, rescalings=None, preamble=None):
   # Open a chain file and read it into memory
 
   column_names=None
@@ -91,7 +92,9 @@ def getChainData(filename, cut_all_invalid=None, requested_cols=None, assignment
 
     # Make sure the user is not trying to probe a non-hdf5 file.
     if probe_only:
-      sys.exit('ERROR: you cannot use pippi probe with ASCII files. (Why would you need to?)')
+      print 'ERROR: you cannot use pippi probe with ASCII files. (Why would you need to?)'
+      print
+      quit()
 
     #Try to open chain file
     chainfile = safe_open(filename)
@@ -114,9 +117,11 @@ def getChainData(filename, cut_all_invalid=None, requested_cols=None, assignment
             print 'in continuous ascending order starting from the index of the last'
             print 'column in the ASCII file. In this case, that means you must start with'
             print str(ncols)+' and go up by one for each subsequent functional stream.'
-            sys.exit("")
+            quit()
           if not is_functional_assignment(assignments.value[ncols+n_extra_cols]):
-            sys.exit('ERROR: When working with ASCII chains, all entries in assign_to_pippi_datastream\nmust be functional assignments.')
+            print 'ERROR: When working with ASCII chains, all entries in assign_to_pippi_datastream'
+            print 'must be functional assignments.'
+            quit()
           n_extra_cols += 1
     chainfile.seek(0)
 
@@ -153,7 +158,7 @@ def getChainData(filename, cut_all_invalid=None, requested_cols=None, assignment
           print 'in assign_to_pippi_datastream, is not itself defined as a datastream.'
           print 'This usually happens because it does not exist in the chain you are trying'
           print 'to parse. Please fix assignment "'+assignments.value[i]+'".'
-          sys.exit("")
+          quit()
         except:
           print 'ERROR: something in one of the functions of datastreams you defined in '
           print 'assign_to_pippi_datastream is buggy.  Please fix the expression: '
@@ -210,7 +215,8 @@ def getChainData(filename, cut_all_invalid=None, requested_cols=None, assignment
       import h5py
       f = h5py.File(filename,'r')
     except IOError:
-      sys.exit("ERROR while reading hdf5 file.  Check filename and file format.")
+      print "ERROR while reading hdf5 file.  Check filename and file format."
+      quit()
 
     # Get relevant group entries and column names
     entries = f
@@ -219,7 +225,8 @@ def getChainData(filename, cut_all_invalid=None, requested_cols=None, assignment
         try:
           entries = entries[key]
         except KeyError:
-          sys.exit("ERROR: requested group \""+key+"\" does not exist in hdf5 file.")
+          print "ERROR: requested group \""+key+"\" does not exist in hdf5 file."
+          quit()
     column_names = filter(lambda x: x[-8:] != "_isvalid", list(entries))
 
     # Reorganize MPIrank, pointID and other requested entries for convenience.
@@ -308,7 +315,9 @@ def getChainData(filename, cut_all_invalid=None, requested_cols=None, assignment
         try:
           data.append(np.array(entries[column_names[index]], dtype=np.float64))
         except AttributeError:
-          sys.exit("ERROR: \""+column_name+"\" in group \""+groupname+"\" is not convertible to a float.\nProbably you gave the wrong group in your pip file.")
+          print "ERROR: \""+column_name+"\" in group \""+groupname+"\" is not convertible to a float."
+          print "Probably you gave the wrong group in your pip file."
+          quit()
         data_isvalid.append(np.array(entries[column_names[index]+"_isvalid"], dtype=np.float64))
       lookup_key[index] = index_count
       index_count += 1
@@ -317,7 +326,7 @@ def getChainData(filename, cut_all_invalid=None, requested_cols=None, assignment
       print "ERROR: At least one non-function assignment is needed in"
       print "assign_to_pippi_datastream, or a multiplicity or likelihood"
       print "identification in quantity_labels."
-      sys.exit("")
+      quit()
     # Print the raw number of samples in the hdf5 file
     total_samples = data[non_functional_cols[0]].size
     print "  Total samples: ", total_samples
@@ -349,7 +358,7 @@ def getChainData(filename, cut_all_invalid=None, requested_cols=None, assignment
     print "  Total valid samples: ", sum(cut)
 
     # Fill in the derived quantities specified via functional assignments
-    for i in sorted(functional_assignment_indices, key=int):
+    for i in functional_assignment_indices:
       expression = parse_functional_assignment(assignments.value[i], 'data[lookup_key[$]]')
       try:
         # Read in any python preamble specified in the pip file.
@@ -362,7 +371,7 @@ def getChainData(filename, cut_all_invalid=None, requested_cols=None, assignment
         print 'either oneD_plot_quantities or twoD_plot_quantities, so it has not been'
         print 'extracted from the hdf5 file.  Please add it to one of these lists if you'
         print 'really want to do the calculation "'+assignments.value[i]+'"'
-        sys.exit("")
+        quit()
       except:
         print 'ERROR: something in one of the functions of datastreams you defined in '
         print 'assign_to_pippi_datastream is buggy.  Please fix the expression: '

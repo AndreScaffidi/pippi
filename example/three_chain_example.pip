@@ -1,0 +1,104 @@
+-------------------------------
+-------Common fields---------------              ;EFN = empty for none
+
+main_chain         = 'chains/output.txt'       ; Three comparrison chains
+
+comparison_chain   = 'chains/output_comp.txt'                         ;
+
+comparison_chain2  = 'chains/output2_comp.txt'  ;
+
+
+do_posterior_pdf = T                                 ;Parse, script or plot posterior pdfs
+do_profile_like  = T                                 ;Parse, script or plot chain into profile likelihoods
+oneD_contour_levels =                                ;Contour levels to plot in 1D plots (EFN; script operation ignores actual values)
+twoD_contour_levels = 95.4                       ;Recommended one contour per chain!
+oneD_plot_quantities =                                 ;Parameters/observables to construct 1D plots of (EFN)
+twoD_plot_quantities =  {2,3}                        ;Parameters/observable combinations to make 2D plots of (EFN)
+
+-------------------------------
+---Parsing---------------------
+
+parse_dir = 'parse'                         ;
+
+cut_on_invalid_observables = F              ;
+
+default_bins = 34                           ;
+number_of_bins =          ;
+interpolated_resolution = 300               ;
+interpolation_method = 'bilinear'           ;
+
+chain_type = MultiNest                      ;
+compute_evidence = F                        ;
+bf_lnlike_for_profile_like =                ;
+
+use_log_scale = 2                  ;
+quantity_rescalings =                       ;
+data_ranges =                               ;
+
+labels_from_file =                          ;
+preamble =  'import numpy as np'          ;
+assign_to_pippi_datastream =  '$10*$7':11               ;
+
+
+quantity_labels = 0:'multiplicity' \
+                  1:'-2lnlike'      \
+                  2:'log$_{10}(\sigma_p)$ (cm$^2$)' \
+                  3:'$m_1$ (GeV)'      \
+                  4:'$\kappa_1$' \
+                  5:'$m_2$ (GeV)' \
+                  6:'$\kappa_2$' \
+                  7:'log$_{10}(r_{\rho})$' \
+                  8:'$\sigma_{H_1}$ (km/s)' \
+                  9:'$\sigma_{H_2}$ (km/s)' \
+                  10:'log$_{10}(r_\sigma)$' \
+                  11:'log$_{10}(r_\rho r_\sigma)$';labels to apply to different pippi datastream indices (LaTeX for all but multiplicity, prior and likelihood)
+-------------------------------
+---Scripting-------------------
+
+script_dir = 'scripts'                      ;
+
+legend_on_1D =                                       ;
+legend_locations_1D =  3:'tl' ;       
+plot_as_histograms_1D = T                   ;
+key_on_1D =                         ;
+key_locations_1D =                             ;
+ 
+legend_on_2D =              ; 
+legend_locations_2D =    ;
+key_on_2D =  {2,3} ; 
+key_locations_2D   {2,3}:'tl'                 ;
+
+do_comp_marker   =    T                ; Do comparrisson marker for main chain 
+key_label_main   '(Main Chain)'           ;
+key_label_comp   '(Comp chain)'           ; Label the main and comparrison chains
+key_label_comp2  '(Comp chain 2)'           ;
+
+plot_colourbar_2D = {2,3} ;
+same_text_as_marker_colour = T ;
+
+plot_comparison = T                         ;
+extra_legend_lines =     ;
+blame =                ;
+yaxis_number_angle = -90                    ;
+
+plot_posterior_mean_on_posterior_pdf = T    ;
+plot_posterior_mean_on_profile_like = F     ;
+plot_best_fit_on_posterior_pdf = F          ;
+plot_best_fit_on_profile_like = T           ;
+
+axis_ranges =  ; format for axis range is param_name:{a,b}
+
+reference_point = 3:15 2:-45     ;
+reference_text =  'True'        ;
+
+logo_file =           ;
+logo_loc = {0.08,0.89}                      ;
+logo_width = 0.09                           ;
+colour_scheme = MultiHue                    ; Multihue has been edited to include comparrison 1&2 colour schemes
+                                            ; *see piip_colours.py
+-------------------------------
+---Plotting--------------------
+
+plot_dir = 'plots'                          ;
+file_prefix ='three_chain_example'                               ;
+file_suffix =                               ;

@@ -50,6 +50,8 @@ def plot(filename):
 
   # Extract main chain filename, without extension
   baseFilename = re.sub(r'.*/|\..?.?.?$', '', mainChain.value)
+  newName      = mainChain.value.replace('/out.txt','')
+
 
   # Retrieve labels saved in earlier parsing run
   if parsedir.value:
@@ -77,18 +79,18 @@ def plot(filename):
       currentBase = baseFilename+'_'+str(plot)
       # Make profile likelihood plots
       if doProfile.value:
-        subprocess.check_call('cd '+baseFiledir+'; ./'+currentBase+'_like1D.bsh', shell=True)
-        subprocess.check_call('mv '+baseFiledir+currentBase+'_like1D.pdf '+
+        subprocess.call('cd '+baseFiledir+'; ./'+currentBase+'_like1D.bsh', shell=True)
+        subprocess.call('mv '+baseFiledir+currentBase+'_like1D.pdf '+
          outdirectory+'/'+prestring+currentBase+'_like1D'+appstring+'.pdf', shell=True)
       # Make posterior pdf plots
       if doPosterior.value:
-        subprocess.check_call('cd '+baseFiledir+'; ./'+currentBase+'_post1D.bsh', shell=True)
-        subprocess.check_call('mv '+baseFiledir+currentBase+'_post1D.pdf '+
+        subprocess.call('cd '+baseFiledir+'; ./'+currentBase+'_post1D.bsh', shell=True)
+        subprocess.call('mv '+baseFiledir+currentBase+'_post1D.pdf '+
          outdirectory+'/'+prestring+currentBase+'_post1D'+appstring+'.pdf', shell=True)
       # Make profile-posterior comparison plots
       if doProfile.value and doPosterior.value:
-        subprocess.check_call('cd '+baseFiledir+'; ./'+currentBase+'_combo1D.bsh', shell=True)
-        subprocess.check_call('mv '+baseFiledir+currentBase+'_combo1D.pdf '+
+        subprocess.call('cd '+baseFiledir+'; ./'+currentBase+'_combo1D.bsh', shell=True)
+        subprocess.call('mv '+baseFiledir+currentBase+'_combo1D.pdf '+
          outdirectory+'/'+prestring+currentBase+'_combo1D'+appstring+'.pdf', shell=True)
 
   # Run 2D plotting scripts
@@ -100,24 +102,18 @@ def plot(filename):
       currentBase = baseFilename+'_'+'_'.join([str(x) for x in plot])
       # Make profile likelihood plots
       if doProfile.value:
-        subprocess.check_call('cd '+baseFiledir+'; ./'+currentBase+'_like2D.bsh', shell=True)
-        subprocess.check_call('mv '+baseFiledir+currentBase+'_like2D.pdf '+
+        subprocess.call('cd '+baseFiledir+'; ./'+currentBase+'_like2D.bsh', shell=True)
+        subprocess.call('mv '+baseFiledir+currentBase+'_like2D.pdf '+
          outdirectory+'/'+prestring+currentBase+'_like2D'+appstring+'.pdf', shell=True)
       # Make posterior pdf plots
       if doPosterior.value:
-        subprocess.check_call('cd '+baseFiledir+'; ./'+currentBase+'_post2D.bsh', shell=True)
-        subprocess.check_call('mv '+baseFiledir+currentBase+'_post2D.pdf '+
+        subprocess.call('cd '+baseFiledir+'; ./'+currentBase+'_post2D.bsh', shell=True)
+        subprocess.call('mv '+baseFiledir+currentBase+'_post2D.pdf '+
          outdirectory+'/'+prestring+currentBase+'_post2D'+appstring+'.pdf', shell=True)
-      
-      #if doObservable.value:
-      if obsPlots.value is not None:
-          for column in obsPlots.value:
-            subprocess.call('cd '+baseFiledir+'; ./'+currentBase+'_obs2D_'+str(column)+'.bsh', shell=True)
-            subprocess.call('mv '+baseFiledir+currentBase+'_obs2D_'+str(column)+'.pdf '+
-            outdirectory+'/'+prestring+currentBase+'_obs2D_' + str(column) + appstring +'.pdf', shell=True)
       # Make profile-posterior comparison plots
       if doProfile.value and doPosterior.value:
-        subprocess.check_call('cd '+baseFiledir+'; ./'+currentBase+'_combo2D.bsh', shell=True)
-        subprocess.check_call('mv '+baseFiledir+currentBase+'_combo2D.pdf '+
-         outdirectory+'/'+prestring+currentBase+'_combo2D'+appstring+'.pdf', shell=True)
+        continue
+        # subprocess.call('cd '+baseFiledir+'; ./'+currentBase+'_combo2D.bsh', shell=True)
+        # subprocess.call('mv '+baseFiledir+currentBase+'_combo2D.pdf '+
+        #  outdirectory+'/'+prestrin+currentBase+'_combo2D'+appstring+'.pdf', shell=True)
 

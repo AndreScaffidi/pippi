@@ -8,11 +8,35 @@
 # Originally developed: March 2012
 #############################################################
 
-left_margin = 0.16
-right_margin = 0.03
-top_margin = 0.05
-bottom_margin = 0.16
-plot_scale = 1.1
+left_margin  = 0.14
+right_margin = 0.07
+top_margin   = 0.05
+bottom_margin= 0.2
+plot_scale   = 1.1
+
+
+### ANDRE LABEL HACKS ###
+
+ylabel_Size     = 1.5
+xlabel_Size     = 1.6
+ytick_Size      = 1.08
+xtick_Size      = 1.08
+xtick_shift     = 0.18
+ytick_shift     = 0.75
+yShift          = 1.65    # smaller is closer to axis
+xShift          = 1.6
+cBarTicks_Scale = 1.3
+bar_width       = 0.65    # cm
+barLabel_shift  = 2.9
+barLabel_scale  = 1.3
+
+
+likePLot_label_shift  = 3     # Prof. likelihood ratio L/Lmax label on side of plot!
+likePLot_label_scale  = 1.3
+
+do_comparrison_Conts = True
+
+#############################################################
 
 import subprocess
 import os
@@ -23,6 +47,18 @@ from pippi_read import *
 parsedir = dataObject('parse_dir',safe_string)
 
 # Define script-specific pip file entries
+
+# Andre variable hacks Hacks #
+
+key_label_BF2D    = dataObject('BestFit_label_2D',string)
+key_label_M2D     = dataObject('Mean_label_2D',string)
+
+comb_exp_string    = dataObject('key_label_main',string) 
+single_exp_string  = dataObject('key_label_comp',string)
+single_exp_string2 = dataObject('key_label_comp2',string)
+
+
+#########################################################################
 scriptdir = dataObject('script_dir',safe_string)
 doComparison = dataObject('plot_comparison',boolean)
 postMeanOnPost = dataObject('plot_posterior_mean_on_posterior_pdf',boolean)
@@ -50,7 +86,8 @@ axisRanges = dataObject('axis_ranges',floatuple_dictionary)
 yAxisAngle = dataObject('yaxis_number_angle',floater)
 refPoint = dataObject('reference_point',float_dictionary)
 refKey = dataObject('reference_text',string)
-keys = keys+[scriptdir,doComparison,postMeanOnPost,postMeanOnProf,bestFitOnPost,
+text_marker_colour = dataObject('same_text_as_marker_colour',boolean)
+keys = keys+[comb_exp_string,single_exp_string,single_exp_string2,text_marker_colour,scriptdir,doComparison,postMeanOnPost,postMeanOnProf,bestFitOnPost,
         bestFitOnProf,doColourbar,doLegend1D,doLegend2D,legendLoc1D,legendLoc2D,
         doHistograms,legendLines,blame,colours,axisRanges,yAxisAngle,refPoint,
         refKey,doKey1D,doKey2D,keyLoc1D,keyLoc2D,parsedir,logoFile,logoLoc,logoWidth]
@@ -62,7 +99,7 @@ lookupKeys = dataObject('lookup_keys',int_dictionary)
 # Constants
 blameFractionalVerticalOffset = 1.2e-2
 PosteriorIsMainInComboPlot = True
-likeColourbarString = 'Profile likelihood ratio $\Lambda=\mathcal{L}/\mathcal{L}_\mathrm{max}$'
+likeColourbarString = 'Prof. likelihood ratio $\mathcal{L}/\mathcal{L}_\mathrm{max}$'
 postColourbarString = 'Relative probability $P/P_\mathrm{max}$'
 defaultLegendLocation = 'bl'
 defaultKeyLocation = 'tr'
@@ -70,7 +107,7 @@ defaultRefKey = 'Ref.\ point'
 keyYSep = 0.055
 keyXSep = 0.04
 keyYVals = {'t':[0.94 - x*keyYSep for x in range(3)], 'c':[0.44 + x*keyYSep for x in range(3)], 'b':[0.065 + x*keyYSep for x in range(3)]}
-keyXVals = {'r':[0.74 + x*keyXSep for x in range(2)], 'c':[0.45 + x*keyXSep for x in range(2)], 'l':[0.06 + x*keyXSep for x in range(2)]}
+keyXVals = {'r':[0.7 + x*keyXSep for x in range(2)], 'c':[0.45 + x*keyXSep for x in range(2)], 'l':[0.06 + x*keyXSep for x in range(2)]}
 
 def script(filename):
   # input:  filename = the name of the pip file
@@ -81,9 +118,13 @@ def script(filename):
   getIniData(filename,keys)
 
   # Make sure that comparison is turned off if comparison filename is missing
-  if doComparison.value and secChain.value is None:
+  
+  if doComparison.value and secChain.value is None and thiChain.value is None:
     print '  Warning: comparison curves requested but no comparison file specified.\n  Skipping comparison...\n'
     doComparison.value = False
+
+
+
 
   # Work out where the parse output is located
   if parsedir.value is None:
@@ -132,9 +173,15 @@ def script(filename):
   baseFilename = baseFiledir + re.sub(r'.*/|\..?.?.?$', '', mainChain.value)
   parseFilename = parseFiledir + re.sub(r'.*/|\..?.?.?$', '', mainChain.value)
   parseFilenameFromScriptFiledir = parseFiledirFromScriptFiledir + re.sub(r'.*/|\..?.?.?$', '', mainChain.value)
+
   if doComparison.value:
-    secParseFilename = parseFiledir + re.sub(r'.*/|\..?.?.?$', '', secChain.value) + '_comparison'
-    secParseFilenameFromScriptFiledir = parseFiledirFromScriptFiledir + re.sub(r'.*/|\..?.?.?$', '', secChain.value) + '_comparison'
+    secParseFilename = parseFiledir + re.sub(r'.*/|\..?.?.?$', '', secChain.value)
+    secParseFilenameFromScriptFiledir = parseFiledirFromScriptFiledir + re.sub(r'.*/|\..?.?.?$', '', secChain.value)
+    if thiChain.value is not None:
+      thiParseFilename = parseFiledir + re.sub(r'.*/|\..?.?.?$', '', thiChain.value)
+      thiParseFilenameFromScriptFiledir = parseFiledirFromScriptFiledir + re.sub(r'.*/|\..?.?.?$', '', thiChain.value)
+
+
 
   # Retrieve labels and data ranges saved in earlier parsing run
   getIniData([parseFilename+'_savedkeys.pip'],[labels,dataRanges,lookupKeys])
@@ -162,7 +209,11 @@ def script(filename):
       currentBase = baseFilename+'_'+str(plot)
       currentParse = parseFilenameFromScriptFiledir+'_'+str(plot)
       currentBaseMinimal = re.sub(r'.*/', '', currentBase)
-      if doComparison.value: currentSecParse = secParseFilenameFromScriptFiledir+'_'+str(plot)
+      if doComparison.value: 
+        currentSecParse = secParseFilenameFromScriptFiledir+'_'+str(plot)
+        if thiChain.value is not None: 
+          currentThiParse = thiParseFilenameFromScriptFiledir+'_'+str(plot)
+
 
       # Get plot limits
       xtrema = dictFallback(axisRanges,dataRanges,plot)
@@ -225,6 +276,8 @@ def script(filename):
           # Get details of key for best fit
           if bestFitOnProf.value: markers.append([colours.value.mainBestFitMarker, colours.value.mainBestFitColour1D,
                                                   colours.value.mainBestFitMarkerScale, 'Best fit'])
+        
+
           # Reverse vertical ordering if keys are to be placed at the top of the page, so as to fill from the top down
           if keyLoc[0] == 't': markers.reverse()
           # Construct ctioga2 command for each key
@@ -239,6 +292,8 @@ def script(filename):
             # Write the key text
             keyString += '  --draw-text '+str(xVals[1])+','+str(yVals[i])+' \''+key[3]+'\'  /color \''+colours.value.keyTextColour1D
             keyString += '\' /justification left /scale 0.75 /alignment center \\\n'
+
+
 
         # Open plotting shell script file for writing
         outfile = smart_open(currentBase+'_like1D.bsh','w')
@@ -265,17 +320,38 @@ def script(filename):
                           '/style Dashes /width '+str(float(colours.value.lineWidth1D)*0.5)+'\\\n')
             outfile.write('  --draw-text '+str(xtrema[0]+0.045*(xtrema[1]-xtrema[0]))+','+str(float(contour)+0.005)+' \''+str(contours1D.value[i])+
                           '\%CL\' /color \'Black\' /scale 0.5 /justification left /alignment bottom\\\n')
+
+
+
+
         if doComparison.value:
-          # Do everything for comparison chain
+          # Do everything for comparison chain #
           outfile.write('  --plot '+currentSecParse+'_like1D'+histString+'.ct2@1:2 /fill xaxis /fill-transparency '+colours.value.fillTransparency1D+
                         ' /fill-color '+colours.value.comparisonProfColour1D+' /color '+colours.value.comparisonProfColour1D+
                         ' /line-style '+colours.value.comparison1DLineStyle+' /line-width '+colours.value.lineWidth1D+'\\\n')
           if bestFitOnProf.value and colours.value.comparisonBestFitMarker is not None:
-            # Get best-fit point and plot it
+                      # Get best-fit point and plot it
             bestFit = getCentralVal(secParseFilename,plot,'like',lookupKeys)
             outfile.write('  --draw-marker '+str(bestFit)+','+str(yRange*colours.value.comparisonBestFitMarkerScale/40.0)+' '+
                           colours.value.comparisonBestFitMarker+' /color \''+colours.value.comparisonBestFitColour+
-                          '\' /scale '+str(colours.value.comparisonBestFitMarkerScale)+' \\\n')
+                          '\' /scale '+str(colours.value.comparisonBestFitMarkerScale)+' \\\n')          
+          # For possible second comparrison chain for 2
+          if thiChain.value is not None:
+            outfile.write('  --plot '+currentThiParse+'_like1D'+histString+'.ct2@1:2 /fill xaxis /fill-transparency '+colours.value.fillTransparency1D+
+                          ' /fill-color '+colours.value.comparison2ProfColour1D+' /color '+colours.value.comparison2ProfColour1D+
+                          ' /line-style '+colours.value.comparison21DLineStyle+' /line-width '+colours.value.lineWidth1D+'\\\n')            
+
+            if bestFitOnProf.value and colours.value.comparison2BestFitMarker is not None:
+                      # Get best-fit point and plot it for 2
+              bestFit = getCentralVal(thiParseFilename,plot,'like',lookupKeys)
+              outfile.write('  --draw-marker '+str(bestFit)+','+str(yRange*colours.value.comparison2BestFitMarkerScale/40.0)+' '+
+                            colours.value.comparison2BestFitMarker+' /color \''+colours.value.comparison2BestFitColour+
+                            '\' /scale '+str(colours.value.comparison2BestFitMarkerScale)+' \\\n') 
+  
+
+
+
+
           if postMeanOnProf.value and colours.value.comparisonPostMeanMarker is not None:
             # Get posterior mean and plot it
             postMean = getCentralVal(secParseFilename,plot,'post',lookupKeys)
@@ -332,7 +408,10 @@ def script(filename):
         # Get contours
         if contours1D.value is not None:
           mainContourLevels = getContours(parseFilename,plot,'post')
-          if doComparison.value: secContourLevels = getContours(secParseFilename,plot,'post')
+          if doComparison.value: 
+            secContourLevels = getContours(secParseFilename,plot,'post')
+            if thiChain.value is not None:
+              thiContourLevels = getContours(thiParseFilename,plot,'post')
 
         # Determine keys
         keyString = ''
@@ -399,6 +478,9 @@ def script(filename):
                           '\' /style Dashes /width '+str(float(colours.value.lineWidth1D)*0.5)+'\\\n')
             outfile.write('  --draw-text '+str(xtrema[0]+0.045*(xtrema[1]-xtrema[0]))+','+str(float(contour)+0.005)+' \''+str(contours1D.value[i])+
                           '\%CR\' /color \''+colours.value.mainPostColour1D+'\' /scale 0.5 /justification left /alignment bottom\\\n')
+        
+
+
         if doComparison.value:
           # Do everything for comparison chain
           if contours1D is not None:
@@ -423,9 +505,39 @@ def script(filename):
             outfile.write('  --draw-marker '+str(postMean)+','+str(yRange*colours.value.comparisonPostMeanMarkerScale/40.0)+' '+
                           colours.value.comparisonPostMeanMarker+' /color \''+colours.value.comparisonPostMeanColour+
                           '\' /scale '+str(colours.value.comparisonPostMeanMarkerScale)+' \\\n')
+
+        if thiChain.value is not None:
+          # Do everything for comparison chain 2
+          if contours1D is not None:
+            for i, contour in enumerate(thiContourLevels):
+              outfile.write('  --draw-line '+str(xtrema[0])+','+contour+' '+str(xtrema[1])+','+contour+' /color \''+colours.value.comparison2PostColour1D+
+                            '\' /style Dashes /width '+str(float(colours.value.lineWidth1D)*0.5)+'\\\n')
+              outfile.write('  --draw-text '+str(xtrema[0]+0.045*(xtrema[1]-xtrema[0]))+','+str(float(contour)+0.005)+' \''+str(contours1D.value[i])+
+                            '\%CR\' /color \''+colours.value.comparison2PostColour1D+'\' /scale 0.5 /justification left /alignment bottom\\\n')
+          outfile.write('  --plot '+currentThiParse+'_post1D'+histString+'.ct2@1:2 /fill xaxis /fill-transparency '+colours.value.fillTransparency1D+
+                        ' /fill-color '+colours.value.comparison2PostColour1D+' /color '+colours.value.comparison2PostColour1D+
+                        ' /line-style '+colours.value.comparison21DLineStyle+' /line-width '+colours.value.lineWidth1D+'\\\n')
+          if bestFitOnPost.value and colours.value.comparison2BestFitMarker is not None:
+            # Get best-fit point and plot it
+            bestFit = getCentralVal(ThiParseFilename,plot,'like',lookupKeys)
+            outfile.write('  --draw-marker '+str(bestFit)+','+str(yRange*colours.value.comparison2BestFitMarkerScale/40.0)+' '+
+                          colours.value.comparison2BestFitMarker+' /color \''+colours.value.comparison2BestFitColour+
+                          '\' /scale '+str(colours.value.comparison2BestFitMarkerScale)+' \\\n')
+          if postMeanOnPost.value and colours.value.comparison2PostMeanMarker is not None:
+            # Get posterior mean and plot it
+            postMean = getCentralVal(thiParseFilename,plot,'post',lookupKeys)
+            if not postMean: sys.exit('Error: plot_posterior_mean_on_posterior_pdf = T but no multiplicity given!')
+            outfile.write('  --draw-marker '+str(postMean)+','+str(yRange*colours.value.comparison2PostMeanMarkerScale/40.0)+' '+
+                          colours.value.comparison2PostMeanMarker+' /color \''+colours.value.comparison2PostMeanColour+
+                          '\' /scale '+str(colours.value.comparison2PostMeanMarkerScale)+' \\\n')
+        
+        # Putting it all together:
+
         outfile.write('  --plot '+currentParse+'_post1D'+histString+'.ct2@1:2 /fill xaxis /fill-transparency '+colours.value.fillTransparency1D+
                       ' /fill-color '+colours.value.mainPostColour1D+' /color '+colours.value.mainPostColour1D+
                       ' /line-style '+colours.value.main1DLineStyle+' /line-width '+colours.value.lineWidth1D+'\\\n')
+
+
         if doLegend1D.value is not None and plot in doLegend1D.value:
           # Write legend
           try:
@@ -603,18 +715,27 @@ def script(filename):
 
     # Loop over requested plots
     for plot in twoDplots.value:
-
       print '    Writing scripts for 2D plots of quantities ',plot
 
       # Set up filenames
       currentBase = baseFilename+'_'+'_'.join([str(x) for x in plot])
       currentParse = parseFilenameFromScriptFiledir+'_'+'_'.join([str(x) for x in plot])
       currentBaseMinimal = re.sub(r'.*/', '', currentBase)
-      if doComparison.value: currentSecParse = secParseFilenameFromScriptFiledir+'_'+'_'.join([str(x) for x in plot])
+
+
+
+      if doComparison.value:
+        currentSecParse = secParseFilenameFromScriptFiledir+'_'+'_'.join([str(x) for x in plot])
+        if thiChain.value is not None:
+          currentThiParse = thiParseFilenameFromScriptFiledir+'_'+'_'.join([str(x) for x in plot])
+
+
+
 
       # Get plot limits
       xtrema = dictFallback(axisRanges,dataRanges,plot[0])
       ytrema = dictFallback(axisRanges,dataRanges,plot[1])
+
       xRange = xtrema[1] - xtrema[0]
       yRange = ytrema[1] - ytrema[0]
 
@@ -664,6 +785,8 @@ def script(filename):
           # Get x and y coordinates for 3 possible keys (for markers and text)
           yVals = ytrema[0] + np.array(keyYVals[keyLoc[0]])*yRange
           xVals = xtrema[0] + np.array(keyXVals[keyLoc[1]])*xRange
+
+
           markers = []
           # Get details of key for reference point
           if plotRef: markers.append([colours.value.referenceMarkerOuter,
@@ -679,13 +802,29 @@ def script(filename):
                                                    colours.value.mainPostMeanColour2D,
                                                    colours.value.mainPostMeanColourOutline2D,
                                                    colours.value.mainPostMeanMarkerScale,
-                                                  'Mean'])
+                                                  'Mean '])
           # Get details of key for best fit
           if bestFitOnProf.value: markers.append([colours.value.mainBestFitMarker,
                                                   colours.value.mainBestFitColour2D,
                                                   colours.value.mainBestFitColourOutline2D,
                                                   colours.value.mainBestFitMarkerScale,
-                                                  'Best fit'])
+                                                  'Best fit %s' %(comb_exp_string.value)])
+
+          if doComparison.value:
+            if doCompMarker.value:
+              markers.append([colours.value.comparisonBestFitMarker,
+                                                    colours.value.comparisonBestFitColour2D,
+                                                    colours.value.comparisonBestFitColourOutline2D,
+                                                    colours.value.comparisonBestFitMarkerScale,
+                                                    'Best fit %s' %(single_exp_string.value)])
+            
+            if thiChain.value is not None:
+              markers.append([colours.value.comparison2BestFitMarker,colours.value.comparison2BestFitColour2D,colours.value.comparison2BestFitColourOutline2D,colours.value.comparison2BestFitMarkerScale,'Best fit %s' %(single_exp_string2.value)])
+              yNEW = yVals[2] - (-yVals[2]+yVals[1])
+              YGOOD= np.array([yVals[0],yVals[1],yVals[2],yNEW])
+              yVals=YGOOD
+
+
           # Reverse vertical ordering if keys are to be placed at the top of the page, so as to fill from the top down
           if keyLoc[0] == 't': markers.reverse()
           # Construct ctioga2 command for each key
@@ -693,12 +832,16 @@ def script(filename):
             if key[0] == 'Bullet' or key[0] == 'BulletOpen': key[3] /= 1.5
             if key[3] > 1.0: key[3] = 1.0
             # Write the extra marker overlay for the reference point
-            if len(key) == 8: keyString += '  --draw-marker '+str(xVals[0])+','+str(yVals[i])+' '+key[5]+' /color \''+\
-                                           key[6]+'\' /scale '+str(key[7]*key[3])+'\\\n'
+            if len(key) == 8: keyString += '  --draw-marker '+str(xVals[0])+','+str(yVals[i])+' '+key[5]+' /color \''+key[6]+'\' /scale '+str(key[7]*key[3])+'\\\n'
             # Write the main marker
+
             keyString += '  --draw-marker '+str(xVals[0])+','+str(yVals[i])+' '+key[0]+' /fill-color \''+str(key[1])+'\' /stroke-color \''+str(key[2])+'\' /scale '+str(key[3])+'\\\n'
             # Write the key text
+            
+
             keyString += '  --draw-text '+str(xVals[1])+','+str(yVals[i])+' \''+key[4]+'\'  /color \''+colours.value.keyTextColour2D
+
+
             keyString += '\' /justification left /scale 0.75 /alignment center \\\n'
 
         # Open plotting shell script file for writing
@@ -721,45 +864,184 @@ def script(filename):
                                             +str(bottom_margin)+'\\\n')
         outfile.write('  --xrange '+str(xtrema[0])+':'+str(xtrema[1])+'\\\n')
         outfile.write('  --yrange '+str(ytrema[0])+':'+str(ytrema[1])+'\\\n')
-        outfile.write('  --ylabel \''+labels.value[plot[1]]+'\' /shift 2.9\\\n')
-        outfile.write('  --xlabel \''+labels.value[plot[0]]+'\'\\\n')
-        outfile.write('  --label-style x /scale 1.0 /shift 0.15 --label-style y /scale 1.0 /shift 0.75')
+        
+
+############## ANDRE HACKS ####################
+
+
+        outfile.write('  --ylabel \''+labels.value[plot[1]]+'\' /shift %.3F\\\n /scale %.5F' %(yShift,ylabel_Size))
+        outfile.write('  --xlabel \''+labels.value[plot[0]]+'\' /shift %.3F\\\n /scale %.5F' %(xShift,xlabel_Size))
+        outfile.write('  --label-style x /scale %.5F /shift %.5F --label-style y /scale %.5F /shift %.5F' %(xtick_Size,xtick_shift,ytick_Size,ytick_shift))
         if yAxisAngle.value is not None: outfile.write(' /angle '+str(yAxisAngle.value))
-        outfile.write("  /valign 'midheight'")
         outfile.write('\\\n  --xyz-map\\\n')
         if doColourbar.value is not None and plot in doColourbar.value:
-          outfile.write('  --new-zaxis zvalues /location right /bar_size \'0.5cm\'\\\n')
-          outfile.write("  --label-style zvalues /angle 270 /shift 0.4 /valign 'midheight'\\\n")
+          outfile.write('  --new-zaxis zvalues /location right /bar_size \'%.4Fcm\'\\\n' %(bar_width))
+          outfile.write('  --label-style zvalues /angle 270 /shift 0.4 /scale %.4F\\\n' %(cBarTicks_Scale))
         outfile.write('  --plot '+currentParse+'_like2D.ct2@1:2:3 ')
+        
         if doColourbar.value is not None and plot in doColourbar.value: outfile.write('/zaxis zvalues ')
         outfile.write('/color-map \''+colours.value.colourMap(contourLevels,'like')+'\'\\\n')
+
+
+
+###############################################
+      
+        # if doComparison.value:
+        #   # Do everything for comparison chain
+        #   if contours2D.value is not None:
+        #     # Plot contours
+        #     if (do_comparrison_Conts==True and thiChain.value is None):
+
+            
+        #       outfile.write('  --plot '+currentSecParse+'_like2D.ct2@1:2:3 /fill-transparency 1\\\n')
+        #       for contour in contourLevels:
+
+        #         outfile.write('  --draw-contour '+contour+' /color '+colours.value.comparisonProfContourColour2D+
+        #                       ' /style '+colours.value.comparisonContourStyle+' /width '+colours.value.lineWidth2D+'\\\n')
+            
+        #       outfile.write('  --plot '+currentSecParse+'_like2D.ct2@1:2:3 /fill-transparency 1\\\n')          
+            
+        #     elif (do_comparrison_Conts==True and thiChain.value is not None):
+
+
+        #       for contour in contourLevels:
+
+        #         outfile.write('  --draw-contour '+contour+' /color '+colours.value.comparisonProfContourColour2D+
+        #                       ' /style '+colours.value.comparisonContourStyle+' /width '+colours.value.lineWidth2D+'\\\n')
+
+        #       outfile.write('  --plot '+currentThiParse+'_like2D.ct2@1:2:3 /fill-transparency 1\\\n')
+        #       for contour in contourLevels:
+
+        #         outfile.write('  --draw-contour '+contour+' /color '+colours.value.comparison2ProfContourColour2D+
+        #                       ' /style '+colours.value.comparison2ContourStyle+' /width '+colours.value.lineWidth2D+'\\\n')
+        #     else:
+
+        #       poop=1
+
+        #   if bestFitOnProf.value and colours.value.comparisonBestFitMarker is not None:
+        #     # Get best-fit point and plot it
+        #     bestFit = getCentralVal(secParseFilename,plot,'like',lookupKeys)
+        #     outfile.write('  --draw-marker '+str(bestFit[0])+','+str(bestFit[1])+' '+
+        #                   colours.value.comparisonBestFitMarker+' /color \''+colours.value.comparisonBestFitColour+
+        #                   '\' /scale '+str(colours.value.comparisonBestFitMarkerScale)+' \\\n')
+          
+        #   if (thiChain.value is not None and colours.value.comparison2BestFitMarker is not None):
+            
+        #     bestFit = getCentralVal(thiParseFilename,plot,'like',lookupKeys)
+        #     outfile.write('  --draw-marker '+str(bestFit[0])+','+str(bestFit[1])+' '+
+        #                   colours.value.comparison2BestFitMarker+' /color \''+colours.value.comparison2BestFitColour+
+        #                   '\' /scale '+str(colours.value.comparison2BestFitMarkerScale)+' \\\n')              
+
+
+        #   if postMeanOnProf.value and colours.value.comparisonPostMeanMarker is not None:
+        #     # Get posterior mean and plot it
+        #     postMean = getCentralVal(secParseFilename,plot,'post',lookupKeys)
+        #     if not postMean: sys.exit('Error: plot_posterior_mean_on_profile_like = T but no multiplicity given!')
+        #     outfile.write('  --draw-marker '+str(postMean[0])+','+str(postMean[1])+' '+
+        #                   colours.value.comparisonPostMeanMarker+' /color \''+colours.value.comparisonPostMeanColour+
+        #                   '\' /scale '+str(colours.value.comparisonPostMeanMarkerScale)+' \\\n')
+          
+        #   if postMeanOnProf.value and colours.value.comparison2postMeanMarker is not None:
+        #     # Get posterior mean and plot it
+        #     postMean = getCentralVal(thiParseFilename,plot,'post',lookupKeys)
+        #     if not postMean: sys.exit('Error: plot_posterior_mean_on_profile_like = T but no multiplicity given!')
+        #     outfile.write('  --draw-marker '+str(postMean[0])+','+str(postMean[1])+' '+
+        #                   colours.value.comparison2PostMeanMarker+' /color \''+colours.value.comparison2PostMeanColour+
+        #                   '\' /scale '+str(colours.value.comparison2PostMeanMarkerScale)+' \\\n')
+
+
+        # outfile.write('  --plot '+currentParse+'_like2D.ct2@1:2:3 /fill-transparency 1\\\n')
+       
         if doComparison.value:
+
           # Do everything for comparison chain
           if contours2D.value is not None:
             # Plot contours
             outfile.write('  --plot '+currentSecParse+'_like2D.ct2@1:2:3 /fill-transparency 1\\\n')
+            n_itt = 0
             for contour in contourLevels:
-              outfile.write('  --draw-contour '+contour+' /color '+colours.value.comparisonProfContourColour2D+
-                            ' /style '+colours.value.comparisonContourStyle+' /width '+colours.value.lineWidth2D+'\\\n')
-          if bestFitOnProf.value and colours.value.comparisonBestFitMarker is not None:
+              
+              if (n_itt == 1):
+                outfile.write('  --draw-contour '+contour+' /color '+colours.value.comparisonProfContourColour2D+
+                              ' /style '+colours.value.secondaryContourStyle+' /width '+colours.value.lineWidth2D+'\\\n')
+        
+              else:
+                outfile.write('  --draw-contour '+contour+' /color '+colours.value.comparisonProfContourColour2D+
+                              ' /style '+colours.value.comparisonContourStyle+' /width '+colours.value.lineWidth2D+'\\\n')
+              n_itt = n_itt + 1
+
+          if doCompMarker.value and colours.value.comparisonBestFitMarker is not None:
             # Get best-fit point and plot it
             bestFit = getCentralVal(secParseFilename,plot,'like',lookupKeys)
             outfile.write('  --draw-marker '+str(bestFit[0])+','+str(bestFit[1])+' '+
                           colours.value.comparisonBestFitMarker+' /color \''+colours.value.comparisonBestFitColour+
                           '\' /scale '+str(colours.value.comparisonBestFitMarkerScale)+' \\\n')
-          if postMeanOnProf.value and colours.value.comparisonPostMeanMarker is not None:
+          if postMeanOnProf.value and colours.value.comparisonProfMeanMarker is not None:
             # Get posterior mean and plot it
             postMean = getCentralVal(secParseFilename,plot,'post',lookupKeys)
-            if not postMean: sys.exit('Error: plot_posterior_mean_on_profile_like = T but no multiplicity given!')
             outfile.write('  --draw-marker '+str(postMean[0])+','+str(postMean[1])+' '+
-                          colours.value.comparisonPostMeanMarker+' /color \''+colours.value.comparisonPostMeanColour+
-                          '\' /scale '+str(colours.value.comparisonPostMeanMarkerScale)+' \\\n')
+                          colours.value.comparisonProfMeanMarker+' /color \''+colours.value.comparisonProfMeanColour+
+                          '\' /scale '+str(colours.value.comparisonProfMeanMarkerScale)+' \\\n')
+
         outfile.write('  --plot '+currentParse+'_like2D.ct2@1:2:3 /fill-transparency 1\\\n')
+        
+
+
+        ###########
+        if doComparison.value:
+          if contours2D.value is not None and thiChain.value is not None:
+            # Plot contours
+            outfile.write('  --plot '+currentThiParse+'_like2D.ct2@1:2:3 /fill-transparency 1\\\n')
+            n_itt = 0
+            for contour in contourLevels:
+              if (n_itt == 1):
+                outfile.write('  --draw-contour '+contour+' /color '+colours.value.comparison2ProfContourColour2D+
+                              ' /style '+colours.value.secondaryContourStyle+' /width '+colours.value.lineWidth2D+'\\\n')
+              else:
+                outfile.write('  --draw-contour '+contour+' /color '+colours.value.comparison2ProfContourColour2D+
+                              ' /style '+colours.value.comparison2ContourStyle+' /width '+colours.value.lineWidth2D+'\\\n')
+              n_itt = n_itt + 1
+
+
+            if bestFitOnProf.value and colours.value.comparison2BestFitMarker is not None:
+              # Get best-fit point and plot it
+              bestFit = getCentralVal(thiParseFilename,plot,'like',lookupKeys)
+              outfile.write('  --draw-marker '+str(bestFit[0])+','+str(bestFit[1])+' '+
+                            colours.value.comparison2BestFitMarker+' /color \''+colours.value.comparison2BestFitColour+
+                            '\' /scale '+str(colours.value.comparison2BestFitMarkerScale)+' \\\n')
+            if postMeanOnProf.value and colours.value.comparison2ProfMeanMarker is not None:
+              # Get posterior mean and plot it
+              postMean = getCentralVal(thiParseFilename,plot,'post',lookupKeys)
+              outfile.write('  --draw-marker '+str(postMean[0])+','+str(postMean[1])+' '+
+                            colours.value.comparison2ProfMeanMarker+' /color \''+colours.value.comparison2ProfMeanColour+
+                            '\' /scale '+str(colours.value.comparison2ProfMeanMarkerScale)+' \\\n')
+          
+
+
+        outfile.write('  --plot '+currentParse+'_like2D.ct2@1:2:3 /fill-transparency 1\\\n')
+
+
+
+
+
+
+###############################################
+
+
         if contours2D.value is not None:
           # Plot contours
+          n_itt = 0
           for contour in contourLevels:
-            outfile.write('  --draw-contour '+contour+' /color '+colours.value.mainProfContourColour2D+
-                          ' /style '+colours.value.mainContourStyle+' /width '+colours.value.lineWidth2D+'\\\n')
+
+            if (n_itt == 1):
+              outfile.write('  --draw-contour '+contour+' /color '+colours.value.mainProfContourColour2D+
+                            ' /style '+colours.value.secondaryContourStyle+' /width '+colours.value.lineWidth2D+'\\\n')
+            else:
+              outfile.write('  --draw-contour '+contour+' /color '+colours.value.mainProfContourColour2D+
+                            ' /style '+colours.value.mainContourStyle+' /width '+colours.value.lineWidth2D+'\\\n')
+            n_itt = n_itt + 1
+
+
         if doLegend2D.value is not None and plot in doLegend2D.value:
           # Write legend
           try:
@@ -769,7 +1051,7 @@ def script(filename):
           outfile.write('  --legend-inside \''+legendLocation+'\' /scale 1.0 /vpadding 0.1\\\n')
           if legendLines.value is not None:
             for x in legendLines.value: outfile.write('  --legend-line \''+x+'\' /color \''+colours.value.legendTextColour2D+'\'\\\n')
-          outfile.write('  --legend-line \'Prof.~likelihood\' /color \''+colours.value.legendTextColour2D+'\'\\\n')
+          outfile.write('  --legend-line \'\' /color \''+colours.value.legendTextColour2D+'\'\\\n')
         if bestFitOnProf.value:
           # Get best-fit point and plot it
           bestFit = getCentralVal(parseFilename,plot,'like',lookupKeys)
@@ -797,11 +1079,20 @@ def script(filename):
         # Set axis colours
         for x in ['top', 'bottom', 'left', 'right']:
           outfile.write('  --axis-style '+x+' /stroke_color \''+colours.value.axisColour2D+'\'\\\n')
+       
+
+
+##############################
+
+
         if doColourbar.value is not None and plot in doColourbar.value:
           # Do labelling for colourbar
           outfile.write('  --y2 --plot '+currentParse+'_like2D.ct2@1:2:3 /fill-transparency 1\\\n')
           outfile.write('  --axis-style y /decoration ticks --yrange '+str(ytrema[0])+':'+str(ytrema[1])+'\\\n')
-          outfile.write('  --ylabel \''+likeColourbarString+'\' /shift 3.5 /angle 180 /scale 0.8\\\n')
+          outfile.write('  --ylabel \''+likeColourbarString+'\' /shift %.3F /angle 180 /scale %.3F\\\n' %(likePLot_label_shift,likePLot_label_scale))
+        
+#################################
+
         outfile.close
         subprocess.call('chmod +x '+currentBase+'_like2D.bsh', shell=True)
 
@@ -811,7 +1102,11 @@ def script(filename):
         # Get contours
         if contours2D.value is not None:
           mainContourLevels = getContours(parseFilename,plot,'post')
-          if doComparison.value: secContourLevels = getContours(secParseFilename,plot,'post')
+          if doComparison.value:
+            secContourLevels = getContours(secParseFilename,plot,'post')
+            if thiChain.value is not None:
+              thiContourLevels = getContours(thiParseFilename,plot,'post')
+
 
         # Determine keys
         keyString = ''
@@ -841,13 +1136,35 @@ def script(filename):
                                                    colours.value.mainPostMeanColour2D,
                                                    colours.value.mainPostMeanColourOutline2D,
                                                    colours.value.mainPostMeanMarkerScale,
-                                                   'Mean'])
+                                                   'Mean %s' %(comb_exp_string.value)])
           # Get details of key for best fit
           if bestFitOnPost.value: markers.append([colours.value.mainBestFitMarker,
                                                   colours.value.mainBestFitColour2D,
                                                   colours.value.mainBestFitColourOutline2D,
                                                   colours.value.mainBestFitMarkerScale,
                                                   'Best fit'])
+          
+
+          if doComparison.value: markers.append([colours.value.comparisonPostMarker,
+                                                  colours.value.comparisonPostColour2D,
+                                                  colours.value.comparisonPostColourOutline2D,
+                                                  colours.value.comparisonPostMarkerScale,
+                                                  'Mean %s' %(single_exp_string.value)])
+
+
+
+          if doComparison.value and thiChain.value is not None:
+            markers.append([colours.value.comparison2PostMarker,
+                                                  colours.value.comparison2PostColour2D,
+                                                  colours.value.comparison2PostColourOutline2D,
+                                                  colours.value.comparison2PostMarkerScale,
+                                                  'Mean %s' %(single_exp_string2.value)])
+
+            yNEW = yVals[2] - (-yVals[2]+yVals[1])
+            YGOOD= np.array([yVals[0],yVals[1],yVals[2],yNEW])
+            yVals=YGOOD
+
+
           # Reverse vertical ordering if keys are to be placed at the top of the page, so as to fill from the top down
           if keyLoc[0] == 't': markers.reverse()
           # Construct ctioga2 command for each key
@@ -860,7 +1177,11 @@ def script(filename):
             # Write the main marker
             keyString += '  --draw-marker '+str(xVals[0])+','+str(yVals[i])+' '+key[0]+' /fill-color \''+str(key[1])+'\' /stroke-color \''+str(key[2])+'\' /scale '+str(key[3])+'\\\n'
             # Write the key text
+            
+
             keyString += '  --draw-text '+str(xVals[1])+','+str(yVals[i])+' \''+key[4]+'\'  /color \''+colours.value.keyTextColour2D
+            
+
             keyString += '\' /justification left /scale 0.75 /alignment center \\\n'
 
         # Open plotting shell script file for writing
@@ -883,26 +1204,41 @@ def script(filename):
                                             +str(bottom_margin)+'\\\n')
         outfile.write('  --xrange '+str(xtrema[0])+':'+str(xtrema[1])+'\\\n')
         outfile.write('  --yrange '+str(ytrema[0])+':'+str(ytrema[1])+'\\\n')
-        outfile.write('  --ylabel \''+labels.value[plot[1]]+'\' /shift 2.9\\\n')
-        outfile.write('  --xlabel \''+labels.value[plot[0]]+'\'\\\n')
-        outfile.write('  --label-style x /scale 1.0 /shift 0.15 --label-style y /scale 1.0 /shift 0.75')
+        
+
+
+        outfile.write('  --ylabel \''+labels.value[plot[1]]+'\' /shift %.3F\\\n /scale %.5F' %(yShift,ylabel_Size))
+        outfile.write('  --xlabel \''+labels.value[plot[0]]+'\' /shift %.3F\\\n /scale %.5F' %(xShift,xlabel_Size))
+        outfile.write('  --label-style x /scale %.5F /shift %.5F --label-style y /scale %.5F /shift %.5F' %(xtick_Size,xtick_shift,ytick_Size,ytick_shift))
         if yAxisAngle.value is not None: outfile.write(' /angle '+str(yAxisAngle.value))
-        outfile.write("  /valign 'midheight'")
         outfile.write('\\\n  --xyz-map\\\n')
         if doColourbar.value is not None and plot in doColourbar.value:
-          outfile.write('  --new-zaxis zvalues /location right /bar_size \'0.5cm\'\\\n')
-          outfile.write("  --label-style zvalues /angle 270 /shift 0.4  /valign 'midheight'\\\n")
+          outfile.write('  --new-zaxis zvalues /location right /bar_size \'%.4Fcm\'\\\n' %(bar_width))
+          outfile.write('  --label-style zvalues /angle 270 /shift 0.4 /scale %.4F\\\n' %(cBarTicks_Scale))
         outfile.write('  --plot '+currentParse+'_post2D.ct2@1:2:3 ')
+        
+
+
         if doColourbar.value is not None and plot in doColourbar.value: outfile.write('/zaxis zvalues ')
         outfile.write('/color-map \''+colours.value.colourMap(mainContourLevels,'post')+'\'\\\n')
+        
+
+
         if doComparison.value:
           # Do everything for comparison chain
           if contours2D.value is not None:
             # Plot contours
             outfile.write('  --plot '+currentSecParse+'_post2D.ct2@1:2:3 /fill-transparency 1\\\n')
             for contour in secContourLevels:
-              outfile.write('  --draw-contour '+contour+' /color '+colours.value.comparisonPostContourColour2D+
-                            ' /style '+colours.value.comparisonContourStyle+' /width '+colours.value.lineWidth2D+'\\\n')
+              n_itt = 0
+              if (n_itt == 1):
+                outfile.write('  --draw-contour '+contour+' /color '+colours.value.comparisonPostContourColour2D+
+                              ' /style '+colours.value.secondaryContourStyle+' /width '+colours.value.lineWidth2D+'\\\n')
+              else:
+                outfile.write('  --draw-contour '+contour+' /color '+colours.value.comparisonPostContourColour2D+
+                              ' /style '+colours.value.comparisonContourStyle+' /width '+colours.value.lineWidth2D+'\\\n')
+              n_itt = n_itt + 1
+
           if bestFitOnPost.value and colours.value.comparisonBestFitMarker is not None:
             # Get best-fit point and plot it
             bestFit = getCentralVal(secParseFilename,plot,'like',lookupKeys)
@@ -915,12 +1251,57 @@ def script(filename):
             outfile.write('  --draw-marker '+str(postMean[0])+','+str(postMean[1])+' '+
                           colours.value.comparisonPostMeanMarker+' /color \''+colours.value.comparisonPostMeanColour+
                           '\' /scale '+str(colours.value.comparisonPostMeanMarkerScale)+' \\\n')
+
         outfile.write('  --plot '+currentParse+'_post2D.ct2@1:2:3 /fill-transparency 1\\\n')
+        
+
+
+        ###########
+        if doComparison.value:
+          if contours2D.value is not None and thiChain.value is not None:
+            # Plot contours
+            outfile.write('  --plot '+currentThiParse+'_post2D.ct2@1:2:3 /fill-transparency 1\\\n')
+            for contour in thiContourLevels:
+              outfile.write('  --draw-contour '+contour+' /color '+colours.value.comparison2PostContourColour2D+
+                            ' /style '+colours.value.comparison2ContourStyle+' /width '+colours.value.lineWidth2D+'\\\n')
+            
+
+
+            if bestFitOnPost.value and colours.value.comparison2BestFitMarker is not None:
+              # Get best-fit point and plot it
+              bestFit = getCentralVal(thiParseFilename,plot,'like',lookupKeys)
+              outfile.write('  --draw-marker '+str(bestFit[0])+','+str(bestFit[1])+' '+
+                            colours.value.comparison2BestFitMarker+' /color \''+colours.value.comparison2BestFitColour+
+                            '\' /scale '+str(colours.value.comparison2BestFitMarkerScale)+' \\\n')
+            if postMeanOnPost.value and colours.value.comparison2PostMeanMarker is not None:
+              # Get posterior mean and plot it
+              postMean = getCentralVal(thiParseFilename,plot,'post',lookupKeys)
+              outfile.write('  --draw-marker '+str(postMean[0])+','+str(postMean[1])+' '+
+                            colours.value.comparison2PostMeanMarker+' /color \''+colours.value.comparison2PostMeanColour+
+                            '\' /scale '+str(colours.value.comparison2PostMeanMarkerScale)+' \\\n')
+          
+
+
+        outfile.write('  --plot '+currentParse+'_post2D.ct2@1:2:3 /fill-transparency 1\\\n')
+        
+
         if contours2D.value is not None:
           # Plot contours
+          n_itt = 0
           for contour in mainContourLevels:
-            outfile.write('  --draw-contour '+contour+' /color '+colours.value.mainPostContourColour2D+
-                          ' /style '+colours.value.mainContourStyle+' /width '+colours.value.lineWidth2D+'\\\n')
+
+            if (n_itt == 1):
+              outfile.write('  --draw-contour '+contour+' /color '+colours.value.mainPostContourColour2D+
+                            ' /style '+colours.value.secondaryContourStyle+' /width '+colours.value.lineWidth2D+'\\\n')
+            else:
+              outfile.write('  --draw-contour '+contour+' /color '+colours.value.mainPostContourColour2D+
+                            ' /style '+colours.value.mainContourStyle+' /width '+colours.value.lineWidth2D+'\\\n')
+            n_itt = n_itt + 1
+
+
+
+
+
         if doLegend2D.value is not None and plot in doLegend2D.value:
           # Write legend
           try:
@@ -957,178 +1338,21 @@ def script(filename):
         # Set axis colours
         for x in ['top', 'bottom', 'left', 'right']:
           outfile.write('  --axis-style '+x+' /stroke_color \''+colours.value.axisColour2D+'\'\\\n')
+        
+
+
+
         if doColourbar.value is not None and plot in doColourbar.value:
           # Do labelling for colourbar
           outfile.write('  --y2 --plot '+currentParse+'_post2D.ct2@1:2:3 /fill-transparency 1\\\n')
           outfile.write('  --axis-style y /decoration ticks --yrange '+str(ytrema[0])+':'+str(ytrema[1])+'\\\n')
-          outfile.write('  --ylabel \''+postColourbarString+'\' /shift 3.5 /angle 180 /scale 0.8\\\n')
+          outfile.write('  --ylabel \''+postColourbarString+'\' /shift %.3F /angle 180 /scale %.3F\\\n' %(likePLot_label_shift,likePLot_label_scale))
+
+
+
+
         outfile.close
         subprocess.call('chmod +x '+currentBase+'_post2D.bsh', shell=True)
-
-# Make observable plotting scripts
-
-     #if doObservable.value:
-      if obsPlots.value is not None:
-          for column in obsPlots.value:
-          
-            # Get contours
-            if contours2D.value is not None:
-              contourLevelsLike = getContours(parseFilename,plot,'like')
-            contourLevelsObs = getContours_obs(parseFilename,plot,column)
-            # Determine keys
-            keyString = ''
-            if doKey2D.value is not None and plot in doKey2D.value:
-              # Get gross key location
-              try:
-                keyLoc = keyLoc2D.value[plot[0]][plot[1]]
-              except (KeyError, TypeError):
-                keyLoc = defaultKeyLocation
-              # Get text to be used for reference point
-              refText = defaultRefKey if refKey.value is None else refKey.value
-              # Get x and y coordinates for 3 possible keys (for markers and text)
-              yVals = ytrema[0] + np.array(keyYVals[keyLoc[0]])*yRange
-              xVals = xtrema[0] + np.array(keyXVals[keyLoc[1]])*xRange
-              markers = []
-              # Get details of key for reference point
-              if plotRef: markers.append([colours.value.referenceMarkerOuter,
-                                          colours.value.referenceMarkerOuterColour,
-                                          colours.value.referenceMarkerOuterColour,
-                                          colours.value.referenceMarkerOuterScale,
-                                          refText,
-                                          colours.value.referenceMarkerInner,
-                                          colours.value.referenceMarkerInnerColour,
-                                          colours.value.referenceMarkerInnerScale/colours.value.referenceMarkerOuterScale])
-              # Get details of key for posterior mean
-              if postMeanOnProf.value: markers.append([colours.value.mainPostMeanMarker,
-                                                       colours.value.mainPostMeanColour2D,
-                                                       colours.value.mainPostMeanColourOutline2D,
-                                                       colours.value.mainPostMeanMarkerScale,
-                                                      'Mean'])
-              # Get details of key for best fit
-              if bestFitOnProf.value: markers.append([colours.value.mainBestFitMarker,
-                                                      colours.value.mainBestFitColour2D,
-                                                      colours.value.mainBestFitColourOutline2D,
-                                                      colours.value.mainBestFitMarkerScale,
-                                                      'Best fit'])
-              # Reverse vertical ordering if keys are to be placed at the top of the page, so as to fill from the top down
-              if keyLoc[0] == 't': markers.reverse()
-              # Construct ctioga2 command for each key
-              for i,key in enumerate(markers):
-                if key[0] == 'Bullet' or key[0] == 'BulletOpen': key[3] /= 1.5
-                if key[3] > 1.0: key[3] = 1.0
-                # Write the extra marker overlay for the reference point
-                if len(key) == 8: keyString += '  --draw-marker '+str(xVals[0])+','+str(yVals[i])+' '+key[5]+' /color \''+\
-                                               key[6]+'\' /scale '+str(key[7]*key[3])+'\\\n'
-                # Write the main marker
-                keyString += '  --draw-marker '+str(xVals[0])+','+str(yVals[i])+' '+key[0]+' /fill-color \''+str(key[1])+'\' /stroke-color \''+str(key[2])+'\' /scale '+str(key[3])+'\\\n'
-                # Write the key text
-                keyString += '  --draw-text '+str(xVals[1])+','+str(yVals[i])+' \''+key[4]+'\'  /color \''+colours.value.keyTextColour2D
-                keyString += '\' /justification left /scale 0.75 /alignment center \\\n'
-
-            # Open plotting shell script file for writing
-            outfile = smart_open(currentBase+'_obs2D_'+str(column)+'.bsh','w')
-            outfile.write('#!/usr/bin/env bash\n')
-            outfile.write('# This plot script created by pippi '+pippiVersion+' on '+datetime.datetime.now().strftime('%c')+'\n')
-            outfile.write('ctioga2\\\n')
-            outfile.write('  --name '+currentBaseMinimal+'_obs2D_'+str(column))
-            outfile.write('  --plot-scale \''+str(plot_scale)+'\'\\\n')
-            outfile.write('  --page-size \''+plotSizeInternal+'\'\\\n')
-            if doColourbar.value is not None and plot in doColourbar.value:
-              outfile.write('  --frame-margins '+str(left_margin+0.03)+','
-                                                +str(right_margin+0.15)+','
-                                                +str(top_margin)+','
-                                                +str(bottom_margin)+'\\\n')
-            else:
-              outfile.write('  --frame-margins '+str(left_margin+0.05)+','
-                                                +str(right_margin+0.02)+','
-                                                +str(top_margin)+','
-                                                +str(bottom_margin)+'\\\n')
-            outfile.write('  --xrange '+str(xtrema[0])+':'+str(xtrema[1])+'\\\n')
-            outfile.write('  --yrange '+str(ytrema[0])+':'+str(ytrema[1])+'\\\n')
-            outfile.write('  --ylabel \''+labels.value[plot[1]]+'\' /shift 2.9\\\n')
-            outfile.write('  --xlabel \''+labels.value[plot[0]]+'\'\\\n')
-            outfile.write('  --label-style x /scale 1.0 /shift 0.15 --label-style y /scale 1.0 /shift 0.75')
-            if yAxisAngle.value is not None: outfile.write(' /angle '+str(yAxisAngle.value))
-            outfile.write("  /valign 'midheight'")
-            outfile.write('\\\n  --xyz-map\\\n')
-            outfile.write('  --plot '+currentParse+'_obs2D_'+str(column)+'.ct2@1:2:3 ')
-            #if doColourbar.value is not None and plot in doColourbar.value: outfile.write('/zaxis zvalues ')
-            outfile.write('/color-map \''+colours.value.colourMap(contourLevelsObs,'obs')+'\'\\\n')
-            if doComparison.value:
-              # Do everything for comparison chain
-              if contours2D.value is not None:
-                # Plot contours
-                outfile.write('  --plot '+currentSecParse+'_like2D.ct2@1:2:3 /fill-transparency 1\\\n')
-                for contour in contourLevels:
-                  outfile.write('  --draw-contour '+contour+' /color '+colours.value.comparisonProfContourColour2D+
-                                ' /style '+colours.value.comparisonContourStyle+' /width '+colours.value.lineWidth2D+'\\\n')
-              if bestFitOnProf.value and colours.value.comparisonBestFitMarker is not None:
-                # Get best-fit point and plot it
-                bestFit = getCentralVal(secParseFilename,plot,'like',lookupKeys)
-                outfile.write('  --draw-marker '+str(bestFit[0])+','+str(bestFit[1])+' '+
-                              colours.value.comparisonBestFitMarker+' /color \''+colours.value.comparisonBestFitColour+
-                              '\' /scale '+str(colours.value.comparisonBestFitMarkerScale)+' \\\n')
-              if postMeanOnProf.value and colours.value.comparisonPostMeanMarker is not None:
-                # Get posterior mean and plot it
-                postMean = getCentralVal(secParseFilename,plot,'post',lookupKeys)
-                if not postMean: sys.exit('Error: plot_posterior_mean_on_profile_like = T but no multiplicity given!')
-                outfile.write('  --draw-marker '+str(postMean[0])+','+str(postMean[1])+' '+
-                              colours.value.comparisonPostMeanMarker+' /color \''+colours.value.comparisonPostMeanColour+
-                              '\' /scale '+str(colours.value.comparisonPostMeanMarkerScale)+' \\\n')
-            outfile.write('  --plot '+currentParse+'_like2D.ct2@1:2:3 /fill-transparency 1\\\n')
-            if contours2D.value is not None:
-              # Plot contours
-              for contour in contourLevelsLike:
-                outfile.write('  --draw-contour '+contour+' /color '+colours.value.mainProfContourColour2D+
-                              ' /style '+colours.value.mainContourStyle+' /width '+colours.value.lineWidth2D+'\\\n')
-            if doLegend2D.value is not None and plot in doLegend2D.value:
-              # Write legend
-              try:
-                legendLocation = legendLoc2D.value[plot[0]][plot[1]]
-              except (KeyError, TypeError):
-                legendLocation = defaultLegendLocation
-              outfile.write('  --legend-inside \''+legendLocation+'\' /scale 1.0 /vpadding 0.1\\\n')
-              if legendLines.value is not None:
-                for x in legendLines.value: outfile.write('  --legend-line \''+x+'\' /color \''+colours.value.legendTextColour2D+'\'\\\n')
-              outfile.write('  --legend-line \'Prof.~likelihood\' /color \''+colours.value.legendTextColour2D+'\'\\\n')
-            if bestFitOnProf.value:
-              # Get best-fit point and plot it
-              bestFit = getCentralVal(parseFilename,plot,'like',lookupKeys)
-              outfile.write('  --draw-marker '+str(bestFit[0])+','+str(bestFit[1])+' '+
-                            colours.value.mainBestFitMarker+' /fill-color \''+str(colours.value.mainBestFitColour2D)+'\' /stroke-color \''+str(colours.value.mainBestFitColourOutline2D)+
-                            '\' /scale '+str(colours.value.mainBestFitMarkerScale)+' \\\n')
-            if postMeanOnProf.value:
-              # Get posterior mean and plot it
-              postMean = getCentralVal(parseFilename,plot,'post',lookupKeys)
-              if not postMean: sys.exit('Error: plot_posterior_mean_on_profile_like = T but no multiplicity given!')
-              outfile.write('  --draw-marker '+str(postMean[0])+','+str(postMean[1])+' '+
-                            colours.value.mainPostMeanMarker+' /fill-color \''+str(colours.value.mainPostMeanColour2D)+'\' /stroke-color \''+str(colours.value.mainPostMeanColourOutline2D)+
-                            '\' /scale '+str(colours.value.mainPostMeanMarkerScale)+' \\\n')
-            # Plot reference point
-            if plotRef: outfile.write(refString)
-            # Draw key
-            outfile.write(keyString)
-            # Write credits
-            if blame.value is not None:
-              blameYCoordinate = str(blameFractionalVerticalOffset * yRange + ytrema[1])
-              outfile.write('  --draw-text '+str(xtrema[1])+','+blameYCoordinate+' \''+blame.value+'\' /scale 0.5 /justification right\\\n')
-            # Add logo
-            if logoFile.value is not None:
-              outfile.write('  --draw-text '+str(logoCoords[0])+','+str(logoCoords[1])+' '+logoString+'\\\n')
-            # Set axis colours
-            for x in ['top', 'bottom', 'left', 'right']:
-              outfile.write('  --axis-style '+x+' /stroke_color \''+colours.value.axisColour2D+'\'\\\n')
-            if doColourbar.value is not None and plot in doColourbar.value:
-              # Do colourbar
-              outfile.write('  --xyz-map\\\n')
-              outfile.write('  --new-zaxis zvalues /location right /bar_size \'0.5cm\'\\\n')
-              outfile.write("  --label-style zvalues /angle 270 /shift 0.4  /valign 'midheight'\\\n")
-              outfile.write('  --y2 --plot '+currentParse+'_obs2D_'+str(column)+'_colorbar.ct2@1:2:3 /zaxis zvalues ')
-              outfile.write('/color-map \''+colours.value.colourMap(contourLevelsObs,'obs')+'\' /fill-transparency 1\\\n')
-              outfile.write('  --axis-style y /decoration ticks --yrange '+str(ytrema[0])+':'+str(ytrema[1])+'\\\n')
-              outfile.write('  --ylabel \''+labels.value[column]+'\' /shift 3.5 /angle 180 /scale 0.8\\\n')
-            outfile.close
-            subprocess.call('chmod +x '+currentBase+'_obs2D_'+str(column)+'.bsh', shell=True)
 
       # Make profile-posterior comparison plotting scripts
       if doProfile.value and doPosterior.value:
@@ -1216,14 +1440,15 @@ def script(filename):
                                             +str(bottom_margin)+'\\\n')
         outfile.write('  --xrange '+str(xtrema[0])+':'+str(xtrema[1])+'\\\n')
         outfile.write('  --yrange '+str(ytrema[0])+':'+str(ytrema[1])+'\\\n')
-        outfile.write('  --ylabel \''+labels.value[plot[1]]+'\' /shift 2.9\\\n')
-        outfile.write('  --xlabel \''+labels.value[plot[0]]+'\'\\\n')
-        outfile.write('  --label-style x /scale 1.0 /shift 0.15 --label-style y /scale 1.0 /shift 0.75')
+        outfile.write('  --ylabel \''+labels.value[plot[1]]+'\' /shift %.3F\\\n /scale %.5F' %(yShift,ylabel_Size))
+        outfile.write('  --xlabel \''+labels.value[plot[0]]+'\' /shift %.3F\\\n /scale %.5F' %(xShift,xlabel_Size))
+        outfile.write('  --label-style x /scale %.5F /shift 0.15 --label-style y /scale %.5F /shift 0.75' %(xtick_Size,ytick_Size))
+
         if yAxisAngle.value is not None: outfile.write(' /angle '+str(yAxisAngle.value))
         outfile.write('\\\n  --xyz-map\\\n')
         if doColourbar.value is not None and plot in doColourbar.value:
-          outfile.write('  --new-zaxis zvalues /location right /bar_size \'0.5cm\'\\\n')
-          outfile.write("  --label-style zvalues /angle 270 /shift 0.4  /valign 'midheight'\\\n")
+          outfile.write('  --new-zaxis zvalues /location right /bar_size \'%.4Fcm\'\\\n' %(bar_width))
+          outfile.write('  --label-style zvalues /angle 270 /shift 0.4 /scale %.4F\\\n' %(cBarTicks_Scale))
         outfile.write('  --plot '+currentParse+'_'+main+'2D.ct2@1:2:3 ')
         if doColourbar.value is not None and plot in doColourbar.value: outfile.write('/zaxis zvalues ')
         outfile.write('/color-map \''+colours.value.colourMap(mainContourLevels,main)+'\'\\\n')
@@ -1248,7 +1473,9 @@ def script(filename):
           outfile.write('  --legend-inside \''+legendLocation+'\' /scale 1.0 /vpadding 0.1\\\n')
           if legendLines.value is not None:
             for x in legendLines.value: outfile.write('  --legend-line \''+x+'\' /color \''+colours.value.legendTextColour2D+'\'\\\n')
-          outfile.write('  --legend-line \'Like vs. Posterior\' /color \''+colours.value.legendTextColour2D+'\'\\\n')
+          outfile.write('  --legend-line \'Prof. Likelihood Ratio (Grey)\' /color \''+colours.value.legendTextColour2D+'\'\\\n')
+          outfile.write('  --legend-line \'Posterior (Colour)\' /color \''+colours.value.legendTextColour2D+'\'\\\n')
+        
         # Get best-fit point
         bestFit = getCentralVal(parseFilename,plot,'like',lookupKeys)
         # Get posterior mean
@@ -1282,7 +1509,7 @@ def script(filename):
           # Do labelling for colourbar
           outfile.write('  --y2 --plot '+currentParse+'_'+main+'2D.ct2@1:2:3 /fill-transparency 1\\\n')
           outfile.write('  --axis-style y /decoration ticks --yrange '+str(ytrema[0])+':'+str(ytrema[1])+'\\\n')
-          outfile.write('  --ylabel \''+postColourbarString+'\' /shift 3.5 /angle 180 /scale 0.8\\\n')
+          outfile.write('  --ylabel \''+postColourbarString+'\' /shift %.4F /angle 180 /scale %.1F\\\n' %(barLabel_shift,barLabel_scale))
         outfile.close
         subprocess.call('chmod +x '+currentBase+'_combo2D.bsh', shell=True)
 
@@ -1294,20 +1521,6 @@ def getContours(parseFilename,plot,statistic):
     [dim, plot] = ['1', '' if statistic == 'like' else '_'+str(plot)]
   # Open contour file
   contourfile = safe_open(parseFilename+plot+'_'+statistic+dim+'D.contours')
-  # Read contents
-  fileContents = contourfile.readline()
-  while fileContents[0] == '#': fileContents = contourfile.readline()
-  #Shut it
-  contourfile.close
-  levels = fileContents.split()
-  return levels
-
-def getContours_obs(parseFilename,plot,observable):
-  # Construct dimensionality of plot and string indicating specific plot (if any)
-  if type(plot) == list:
-    [dim, plot] = [str(len(plot)), '_'+'_'.join([str(x) for x in plot])]
-  # Open contour file
-  contourfile = safe_open(parseFilename+plot+'_obs'+dim+'D_' + str(observable) + '.contours')
   # Read contents
   fileContents = contourfile.readline()
   while fileContents[0] == '#': fileContents = contourfile.readline()
